@@ -65,7 +65,12 @@ async function denoPage(url,chosen,signal){
     const message=new TextEncoder().encode(`GET ${url.pathname+url.search} HTTP/1.1\r\nHost: ${url.host}\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\nAccept-Language: en-US,en;q=0.9\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n`);
     let written=0;while(written<message.length)written+=await connection.write(message.subarray(written));
     const chunks=[];let size=0;const buffer=new Uint8Array(65536);
-    while(true){const length=await connection.read(buffer);if(length===null)break;size+=length;if(size>MAX_PAGE+131072)throw new Error('This webpage is too large to import.');chunks.push(Buffer.from(buffer.subarray(0,length)));}
+    while(true){
+      let length;
+      // Many CDNs close without a TLS close_notify. The HTTP framing check in
+      // decodeHttpResponse still rejects truncated pages, so treat it as end of stream.
+      try{length=await connection.read(buffer);}catch(error){if(chunks.length&&/close_notify|unexpected ?eof|UnexpectedEof/i.test(String(error?.message||error)))break;throw error;}
+      if(length===null)break;size+=length;if(size>MAX_PAGE+131072)throw new Error('This webpage is too large to import.');chunks.push(Buffer.from(buffer.subarray(0,length)));}
     return decodeHttpResponse(Buffer.concat(chunks));
   }finally{signal.removeEventListener('abort',abort);abort();}
 }
