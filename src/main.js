@@ -1,5 +1,5 @@
 import './style.css';
-import {client,snapshot,rpc,insert,update,remove,imageUrl,uploadImage,tables,addRecipeItems} from './data.js';
+import {client,snapshot,rpc,insert,update,remove,imageUrl,uploadImage,tables,liveTables,addRecipeItems} from './data.js';
 import {escapeHtml as h,safeImageUrl,itemPayload,recipePayload,mealSlotKey,canEditList,rememberedAisle,todayLocal,changedFields,photoSource} from './domain.js';
 import {recipeIngredientLines,ingredientAlreadyListed,recipeShoppingItems} from './recipe-shopping.js';
 
@@ -165,7 +165,7 @@ async function subscribe() {
   const generation=epoch;
   channel=client.channel(`web-household-${user.id}-${generation}`);
   // React only to this app's data, not other apps sharing the database.
-  for(const table of tables)channel.on('postgres_changes',{event:'*',schema:'public',table},scheduleRefresh);
+  for(const table of liveTables)channel.on('postgres_changes',{event:'*',schema:'public',table},scheduleRefresh);
   channel.subscribe(status=>{
     if(generation!==epoch)return;
     syncState=status==='SUBSCRIBED'?'Live':status==='CHANNEL_ERROR'||status==='TIMED_OUT'?'Reconnecting':'Connecting';

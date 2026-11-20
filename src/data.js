@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { supabaseUrl, supabaseKey } from './config.js';
 export const client = createClient(supabaseUrl,supabaseKey);
 export const tables = ['shopping_lists','shopping_items','list_members','store_profiles','shared_recipes','shared_meal_plan_entries','sharing_group_members'];
+// Only tables in the supabase_realtime publication. Subscribing to a table outside it
+// makes Realtime register none of the channel's bindings while still reporting SUBSCRIBED.
+export const liveTables = tables.filter(table => table !== 'sharing_group_members');
 export async function rows(table,connection=client) {
   const result = [];
   for (let start=0;;start+=500) {
